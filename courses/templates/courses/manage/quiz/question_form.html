@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if question %}Изменить вопрос{% else %}Новый вопрос{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if question %}Изменить вопрос{% else %}Новый вопрос{% endif %}</h1>
+  <p class="page-meta">Викторина: {{ quiz.title }}</p>
+</div>
+<div class="card form-card">
+  <form method="post">
+    <h3>Текст вопроса</h3>
+    {{ form.as_p }}
+    <h3>Варианты ответов</h3>
+    {{ formset.management_form }}
+    {{ formset }}
+    {% csrf_token %}
+    <div class="actions-row">
+      <input type="submit" value="Сохранить" class="button">
+      <a href="{% url 'quiz_manage' module.id quiz.id %}" class="btn btn-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Мои курсы{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Мои курсы</h1>
+  <p class="page-meta">Управление курсами для преподавания</p>
+</div>
+{% if object_list %}
+<div class="card-grid">
+  {% for course in object_list %}
+  <article class="course-card">
+    <h3>{{ course.title }}</h3>
+    <p class="course-card-meta">{{ course.subject.title }}</p>
+    <div class="course-card-actions">
+      <a href="{% url 'course_edit' course.id %}" class="btn btn-secondary btn-sm">Редактировать</a>
+      <a href="{% url 'course_module_update' course.id %}" class="btn btn-secondary btn-sm">Модули</a>
+      <a href="{% url 'course_delete' course.id %}" class="btn btn-danger btn-sm">Удалить</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+  <p>Вы ещё не создали ни одного курса.</p>
+</div>
+{% endif %}
+<div class="actions-row">
+  <a href="{% url 'course_create' %}" class="button">Создать курс</a>
+</div>
+{% endblock %}

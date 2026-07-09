@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Вопросы — {{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Викторина «{{ quiz.title }}»</h1>
+  <p class="page-meta">
+    Модуль: {{ module.title }} · Порог прохождения: {{ quiz.pass_percent }}%
+  </p>
+</div>
+<div class="actions-row" style="margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 1.5rem;">
+  <a href="{% url 'question_create' module.id quiz.id %}" class="button">Добавить вопрос</a>
+  <a href="{% url 'course_module_update' module.course.id %}" class="btn btn-secondary">Назад к модулям</a>
+</div>
+{% if questions %}
+{% for question in questions %}
+<div class="card">
+  <h3>{{ forloop.counter }}. {{ question.text }}</h3>
+  <ul class="item-list">
+    {% for answer in question.answers.all %}
+    <li>
+      {{ answer.text }}
+      {% if answer.is_correct %}<span class="success">✓ верный</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="course-card-actions">
+    <a href="{% url 'question_update' module.id quiz.id question.id %}" class="btn btn-secondary btn-sm">Изменить</a>
+    <form action="{% url 'question_delete' module.id quiz.id question.id %}" method="post" style="display: inline;">
+      {% csrf_token %}
+      <input type="submit" value="Удалить" class="btn btn-danger btn-sm">
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card empty-state">
+  <p>Вопросов пока нет. Добавьте первый вопрос для викторины.</p>
+  <a href="{% url 'question_create' module.id quiz.id %}" class="button">Добавить вопрос</a>
+</div>
+{% endif %}
+{% endblock %}

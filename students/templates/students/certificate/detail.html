@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Сертификат{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Сертификат</h1>
+</div>
+<div class="card certificate-card">
+  <h2>{{ object.course.title }}</h2>
+  <p>Настоящим подтверждается, что</p>
+  <p><strong>{{ object.user.get_full_name|default:object.user.username }}</strong></p>
+  <p>успешно завершил(а) курс</p>
+  <p class="page-meta">Выдан: {{ object.issued_at|date:"d.m.Y H:i" }}</p>
+  <span class="certificate-code">{{ object.code }}</span>
+</div>
+<div class="actions-row">
+  <a href="{% url 'student_profile' %}" class="btn btn-secondary">Мой профиль</a>
+  <a href="{% url 'student_course_list' %}" class="button">Мои курсы</a>
+</div>
+{% endblock %}

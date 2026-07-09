@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Регистрация{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Регистрация</h1>
+  <p class="page-meta">Создайте аккаунт, чтобы записываться на курсы</p>
+</div>
+<div class="card form-card">
+  <form method="post">
+    {{ form.as_p }}
+    {% csrf_token %}
+    <div class="actions-row">
+      <input type="submit" value="Зарегистрироваться" class="button">
+      <a href="{% url 'login' %}" class="btn btn-secondary">Уже есть аккаунт</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

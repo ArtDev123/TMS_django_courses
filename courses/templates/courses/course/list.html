@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{% if subject %}{{ subject.title }}{% else %}Каталог курсов{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if subject %}{{ subject.title }}{% else %}Каталог курсов{% endif %}</h1>
+  <p class="page-meta">Выберите курс и запишитесь, чтобы начать обучение</p>
+</div>
+<div class="layout-sidebar">
+  <aside class="contents sidebar">
+    <div class="sidebar-title">Предметы</div>
+    <ul class="sidebar-list">
+      <li{% if not subject %} class="selected"{% endif %}>
+        <a href="{% url 'course_list' %}">Все курсы</a>
+      </li>
+      {% for s in subjects %}
+      <li{% if subject.id == s.id %} class="selected"{% endif %}>
+        <a href="{% url 'course_list_subject' s.slug %}">
+          {{ s.title }} ({{ s.total_courses }})
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+  <section>
+    {% if courses %}
+    <div class="card-grid">
+      {% for course in courses %}
+      <article class="course-card">
+        <h3><a href="{% url 'course_detail' course.slug %}">{{ course.title }}</a></h3>
+        <p class="course-card-meta">
+          {{ course.subject.title }} · {{ course.total_modules }} модулей
+        </p>
+        <div class="course-card-actions">
+          <a href="{% url 'course_detail' course.slug %}" class="button btn-sm">Подробнее</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card empty-state">
+      <p>Курсов пока нет{% if subject %} в этой категории{% endif %}.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

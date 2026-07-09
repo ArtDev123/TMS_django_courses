@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Профиль{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Профиль</h1>
+  <p class="page-meta">{{ request.user.get_full_name|default:request.user.username }}</p>
+</div>
+
+<section class="card">
+  <h2>Сертификаты</h2>
+  {% if certificates %}
+  <ul class="item-list">
+    {% for cert in certificates %}
+    <li>
+      <strong>{{ cert.course.title }}</strong>
+      <span class="page-meta"> · {{ cert.issued_at|date:"d.m.Y" }}</span>
+      <a href="{% url 'certificate_detail' cert.code %}">Открыть</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="page-meta">Сертификатов пока нет. Завершите курс на 100%, чтобы получить сертификат.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Награды</h2>
+  {% if badges %}
+  <ul class="item-list">
+    {% for user_badge in badges %}
+    <li>
+      <strong>{{ user_badge.badge.name }}</strong>
+      {% if user_badge.badge.description %}
+      <span class="page-meta"> — {{ user_badge.badge.description }}</span>
+      {% endif %}
+      <span class="page-meta"> · {{ user_badge.awarded_at|date:"d.m.Y" }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="page-meta">Наград пока нет.</p>
+  {% endif %}
+</section>
+{% endblock %}

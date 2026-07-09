@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ object.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ object.title }}</h1>
+  <p class="page-meta">
+    Предмет:
+    <a href="{% url 'course_list_subject' object.subject.slug %}">{{ object.subject.title }}</a>
+    · {{ object.modules.count }} модулей
+    · Преподаватель: {{ object.owner.get_full_name|default:object.owner.username }}
+  </p>
+</div>
+<div class="card">
+  <h2>Описание</h2>
+  {{ object.overview|linebreaks }}
+  <div class="actions-row">
+    {% if request.user.is_authenticated %}
+    <form action="{% url 'student_enroll_course' %}" method="post">
+      {{ enroll_form }}
+      {% csrf_token %}
+      <input type="submit" value="Записаться на курс" class="button">
+    </form>
+    {% else %}
+    <a href="{% url 'student_registration' %}" class="button">
+      Зарегистрироваться, чтобы записаться
+    </a>
+    <a href="{% url 'login' %}" class="btn btn-secondary">Войти</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

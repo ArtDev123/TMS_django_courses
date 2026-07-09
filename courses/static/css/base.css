@@ -125,6 +125,28 @@ ul, ol { margin: 0; padding: 0; }
   background: rgba(255, 255, 255, 0.08);
 }
 
+.logout-form {
+  margin: 0;
+  padding: 0;
+}
+
+.logout-form button {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 0.925rem;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.logout-form button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 #content,
 .site-main {
   flex: 1;

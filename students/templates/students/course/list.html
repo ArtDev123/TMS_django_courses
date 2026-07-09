@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load course_tags %}
+{% block title %}Мои курсы{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Мои курсы</h1>
+  <p class="page-meta">Активные курсы и прогресс обучения</p>
+</div>
+{% if object_list %}
+<div class="card-grid">
+  {% for course in object_list %}
+  <article class="course-card">
+    <h3><a href="{% url 'student_course_detail' course.id %}">{{ course.title }}</a></h3>
+    <p class="course-card-meta">{{ course.subject.title }}</p>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Прогресс</span>
+        <span>{{ course|course_progress:request.user }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-bar-fill" style="width: {{ course|course_progress:request.user }}%"></div>
+      </div>
+    </div>
+    <div class="course-card-actions">
+      <a href="{% url 'student_course_detail' course.id %}" class="button btn-sm">Перейти к материалам</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+  <p>Вы не записаны ни на один курс.</p>
+  <a href="{% url 'course_list' %}" class="button">Посмотреть каталог</a>
+</div>
+{% endif %}
+{% endblock %}

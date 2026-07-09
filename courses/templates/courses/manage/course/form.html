@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Редактировать курс{% else %}Создать курс{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if object %}Редактировать курс{% else %}Создать курс{% endif %}</h1>
+  {% if object %}<p class="page-meta">{{ object.title }}</p>{% endif %}
+</div>
+<div class="card form-card">
+  <form method="post">
+    {{ form.as_p }}
+    {% csrf_token %}
+    <div class="actions-row">
+      <input type="submit" value="Сохранить" class="button">
+      <a href="{% url 'manage_course_list' %}" class="btn btn-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Выход{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Вы вышли из системы</h1>
+  <p class="page-meta">Сессия завершена. До встречи на Educa!</p>
+</div>
+<div class="card form-card">
+  <p><a href="{% url 'login' %}" class="button">Войти снова</a></p>
+  <p><a href="{% url 'course_list' %}">Перейти в каталог курсов</a></p>
+</div>
+{% endblock %}

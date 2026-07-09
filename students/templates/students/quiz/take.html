@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ quiz.title }}</h1>
+  <p class="page-meta">Курс: {{ course.title }} · Порог: {{ quiz.pass_percent }}%</p>
+</div>
+<form method="post">
+  {% csrf_token %}
+  {% for question in questions %}
+  <div class="quiz-question">
+    <p class="quiz-question-title">{{ forloop.counter }}. {{ question.text }}</p>
+    <div class="quiz-options">
+      {% for answer in question.answers.all %}
+      <label class="quiz-option">
+        <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" required>
+        <span>{{ answer.text }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="card empty-state">
+    <p>В этой викторине пока нет вопросов.</p>
+  </div>
+  {% endfor %}
+  {% if questions %}
+  <div class="actions-row">
+    <input type="submit" value="Отправить ответы" class="button">
+    <a href="{% url 'student_course_detail' course.id %}" class="btn btn-secondary">Вернуться к курсу</a>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Изменить контент{% else %}Добавить контент{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{% if object %}Изменить контент{% else %}Добавить контент{% endif %}</h1>
+  <p class="page-meta">Модуль: {{ module.title }} · Курс: {{ module.course.title }}</p>
+</div>
+<div class="card form-card">
+  <form method="post" enctype="multipart/form-data">
+    {{ form.as_p }}
+    {% csrf_token %}
+    <div class="actions-row">
+      <input type="submit" value="Сохранить" class="button">
+      <a href="{% url 'course_module_update' module.course.id %}" class="btn btn-secondary">Назад к модулям</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

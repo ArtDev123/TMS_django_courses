@@ -16,7 +16,12 @@
           <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
           <li><a href="{% url 'student_profile' %}">Профиль</a></li>
           <li><a href="{% url 'manage_course_list' %}">Преподавание</a></li>
-          <li><a href="{% url 'logout' %}">Выход</a></li>
+          <li>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button type="submit">Выход</button>
+            </form>
+          </li>
         {% else %}
           <li><a href="{% url 'course_list' %}">Каталог</a></li>
           <li><a href="{% url 'login' %}">Вход</a></li>
