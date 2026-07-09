@@ -36,16 +36,17 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'courses.apps.CoursesConfig',
+    'students.apps.StudentsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'django.contrib.contenttypes',  # нужен для GenericForeignKey
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'courses',
-    'students',
+    'embed_video',  # встраивание YouTube/Vimeo
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
