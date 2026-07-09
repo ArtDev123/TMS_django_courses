@@ -9,8 +9,8 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     # path('course/', include('courses.urls')),
-    # path('students/', include('students.urls')),
-    # path('', include('courses.public_urls')),
+    path('students/', include('students.urls')),
+    path('', include('courses.public_urls')),
 ]
 
 if settings.DEBUG:
