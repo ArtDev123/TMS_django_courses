@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Educa{% endblock %} — Educa</title>
+  <link href="{% static 'css/base.css' %}" rel="stylesheet">
+</head>
+<body>
+  <header id="header" class="site-header">
+    <div class="header-inner container">
+      <a href="/" class="logo">Edu<span>ca</span></a>
+      <ul class="menu nav-menu">
+        {% if request.user.is_authenticated %}
+          <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
+          <li><a href="{% url 'student_profile' %}">Профиль</a></li>
+          <li><a href="{% url 'manage_course_list' %}">Преподавание</a></li>
+          <li><a href="{% url 'logout' %}">Выход</a></li>
+        {% else %}
+          <li><a href="{% url 'course_list' %}">Каталог</a></li>
+          <li><a href="{% url 'login' %}">Вход</a></li>
+          <li><a href="{% url 'student_registration' %}">Регистрация</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </header>
+  <main id="content" class="site-main">
+    <div class="container">{% block content %}{% endblock %}</div>
+  </main>
+  <footer class="site-footer">
+    <div class="container">© Educa — платформа онлайн-курсов</div>
+  </footer>
+</body>
+</html>
