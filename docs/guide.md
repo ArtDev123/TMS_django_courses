@@ -244,8 +244,8 @@ psql --version
 
 ```bash
 cd TMS_django_courses   # или ваш каталог проекта
-python3 -m venv env/educa
-source env/educa/bin/activate    # Linux/macOS
+python3 -m venv venv
+source venv/bin/activate # Linux/macOS
 ```
 
 После активации в начале строки терминала появится `(educa)`.
@@ -253,7 +253,7 @@ source env/educa/bin/activate    # Linux/macOS
 Windows:
 
 ```powershell
-.\env\educa\Scripts\activate
+.\venv\Scripts\activate
 ```
 
 ### 2.3. Установка зависимостей
