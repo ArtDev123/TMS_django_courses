@@ -1,0 +1,5 @@
+Django==6.0.7
+Pillow
+psycopg2-binary
+django-embed-video
+django-braces
