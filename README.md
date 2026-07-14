@@ -33,4 +33,5 @@ TMS_django_courses/
 └── guide.md        # документация
 ```
 
-Подробный гайд: [guide.md](guide.md)
+Подробный гайд: [docs/guide.md](docs/guide.md)  
+**Оставшаяся реализация (пошагово):** [docs/remaining/README.md](docs/remaining/README.md)
