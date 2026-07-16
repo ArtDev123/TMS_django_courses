@@ -1,31 +1,33 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Educa{% endblock %} — Educa</title>
   <link href="{% static 'css/base.css' %}" rel="stylesheet">
 </head>
+
 <body>
   <header id="header" class="site-header">
     <div class="header-inner container">
       <a href="/" class="logo">Edu<span>ca</span></a>
       <ul class="menu nav-menu">
         {% if request.user.is_authenticated %}
-          {% comment %} <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
-          <li><a href="{% url 'student_profile' %}">Профиль</a></li>
-          <li><a href="{% url 'manage_course_list' %}">Преподавание</a></li> {% endcomment %}
-          <li>
-            <form action="{% url 'logout' %}" method="post" class="logout-form">
-              {% csrf_token %}
-              <button type="submit">Выход</button>
-            </form>
-          </li>
+        {% comment %} <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
+        <li><a href="{% url 'student_profile' %}">Профиль</a></li>
+        <li><a href="{% url 'manage_course_list' %}">Преподавание</a></li> {% endcomment %}
+        <li>
+          <form action="{% url 'logout' %}" method="post" class="logout-form">
+            {% csrf_token %}
+            <button type="submit">Выход</button>
+          </form>
+        </li>
         {% else %}
-          {% comment %} <li><a href="{% url 'course_list' %}">Каталог</a></li>
-          <li><a href="{% url 'login' %}">Вход</a></li>
-          <li><a href="{% url 'student_registration' %}">Регистрация</a></li> {% endcomment %}
+        <li><a href="{% url 'course_list' %}">Каталог</a></li>
+        <li><a href="{% url 'login' %}">Вход</a></li>
+        <li><a href="{% url 'student_registration' %}">Регистрация</a></li>
         {% endif %}
       </ul>
     </div>
@@ -37,4 +39,5 @@
     <div class="container">© Educa — платформа онлайн-курсов</div>
   </footer>
 </body>
+
 </html>
