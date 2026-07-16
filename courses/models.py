@@ -107,3 +107,52 @@ class Image(ItemBase):
 
 class Video(ItemBase):
     url = models.URLField()  # ссылка YouTube, не файл
+
+
+class Quiz(ItemBase):
+    description = models.TextField(blank=True)
+    pass_percent = models.PositiveIntegerField(
+        default=70,
+        help_text='Минимальный процент для зачёта теста')
+
+
+class Question(models.Model):
+    quiz = models.ForeignKey(
+        Quiz, related_name='questions', on_delete=models.CASCADE)
+    text = models.TextField()
+    order = OrderField(blank=True, for_fields=['quiz'])
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.text[:50]
+
+
+class Answer(models.Model):
+    question = models.ForeignKey(
+        Question, related_name='answers', on_delete=models.CASCADE)
+    text = models.CharField(max_length=500)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.text[:50]
+
+
+class QuizResult(models.Model):
+    user = models.ForeignKey(
+        User, related_name='quiz_results', on_delete=models.CASCADE)
+    quiz = models.ForeignKey(
+        Quiz, related_name='results', on_delete=models.CASCADE)
+    score = models.PositiveIntegerField()
+    passed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'quiz'],
+                name='unique_user_quiz_result',
+            ),
+        ]
+
