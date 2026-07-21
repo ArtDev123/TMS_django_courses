@@ -15,8 +15,8 @@
       <a href="/" class="logo">Edu<span>ca</span></a>
       <ul class="menu nav-menu">
         {% if request.user.is_authenticated %}
-        {% comment %} <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
-        <li><a href="{% url 'student_profile' %}">Профиль</a></li>{% endcomment %}
+        <li><a href="{% url 'student_course_list' %}">Мои курсы</a></li>
+        <li><a href="{% url 'student_profile' %}">Профиль</a></li>
         <li><a href="{% url 'manage_course_list' %}">Преподавание</a></li> 
         <li>
           <form action="{% url 'logout' %}" method="post" class="logout-form">
