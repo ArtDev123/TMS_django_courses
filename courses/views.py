@@ -328,3 +328,19 @@ class AnnouncementCourseMixin(CourseOwnerMixin, LoginRequiredMixin, PermissionRe
 
 class AnnouncementEditMixin(AnnouncementCourseMixin, AnnouncementAuthorMixin):
     template_name = 'courses/manage/announcement/form.html'
+
+class AnnouncementListView(AnnouncementCourseMixin, ListView):
+    template_name = ...
+    permission_required = 'courses.view_announcement'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.course = get_object_or_404(Course, pk = kwargs["course_id"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(course = self.course)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["course"] = self.course
+        return context
