@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'embed_video',  # встраивание YouTube/Vimeo
-    'django_seed',
 ]
 
 
