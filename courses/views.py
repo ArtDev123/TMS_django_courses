@@ -16,7 +16,7 @@ from django.views.generic.list import ListView
 
 from .forms import ModuleFormSet, AnswerFormSet
 from .models import (
-    Subject, Course, Module, Content, Quiz, Question, ItemBase
+    Subject, Course, Module, Content, Quiz, Question, ItemBase, Announcement
 )
 
 
@@ -310,4 +310,21 @@ class ContentOrderView(LoginRequiredMixin, View):
 class CourseOwnerMixin:
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.filter(course__owner=self.request_user)
+        return qs.filter(course__owner=self.request.user)
+
+
+class AnnouncementAuthorMixin:
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+
+class AnnouncementCourseMixin(CourseOwnerMixin, LoginRequiredMixin, PermissionRequiredMixin):
+    model = Announcement
+    fields = ['title', 'body', 'is_published']
+
+    def get_success_url(self):
+        pass
+
+class AnnouncementEditMixin(AnnouncementCourseMixin, AnnouncementAuthorMixin):
+    template_name = 'courses/manage/announcement/form.html'
