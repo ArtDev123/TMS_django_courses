@@ -4,6 +4,21 @@
 
 Display views отвечают за чтение данных. Они не должны менять БД по GET.
 
+### Теория: чтение — отдельная ответственность
+
+Разделение «read» и «write» не является формальностью Django. GET-запрос
+может быть повторён браузером, preview-ботом мессенджера, поисковым роботом или
+кэшем. Поэтому GET должен лишь описывать текущее состояние: список курсов,
+конкретный сертификат, архив новостей. Изменение состояния должно происходить
+через POST/PUT/PATCH/DELETE и быть защищено CSRF/аутентификацией.
+
+`ListView` и `DetailView` строят единый мост между SQL и HTML. QuerySet
+описывает, какие данные **разрешено** прочитать, context превращает эти данные
+в понятные переменные template, а template отвечает только за представление.
+Если бизнес-фильтрация переезжает в `{% if %}`, граница доступа становится
+размытой: данные уже были получены и могут случайно появиться в другом месте
+шаблона.
+
 ## 2.1. `TemplateView`
 
 `TemplateView` — view для статичной или почти статичной страницы. Наследует
@@ -387,6 +402,112 @@ template_name: так правила доступа виднее.
 3. Добавьте `select_related("subject", "owner")`.
 4. Создайте detail view сертификата, доступную только его владельцу.
 5. Проверьте URL чужого сертификата в другом браузере: ожидается 404.
+
+## 2.11. Интеграция display views с экранами Educa
+
+### `ListView`: экран «Мои курсы»
+
+**Где на сайте:** header → «Мои курсы» → `/students/courses/`.
+
+В `students/templates/students/course/list.html` каждая карточка строится из
+`object_list`:
+
+```django
+{% for course in object_list %}
+  <h3>
+    <a href="{% url 'student_course_detail' course.id %}">
+      {{ course.title }}
+    </a>
+  </h3>
+{% endfor %}
+```
+
+`object_list` не определён в template вручную. Его добавляет `ListView` после
+вызова `get_queryset()`.
+
+```text
+GET /students/courses/
+→ LoginRequiredMixin.dispatch
+→ BaseListView.get
+→ StudentCourseListView.get_queryset
+  → Course.objects.filter(students=request.user)
+→ get_context_data(object_list=...)
+→ students/course/list.html
+```
+
+Почему filter обязателен:
+
+- **на экране** студент видит только свои карточки;
+- **в БД** выполняется SQL с условием по M2M;
+- **в безопасности** случайный пользователь не получает список всех курсов.
+
+Если добавить pagination, на этом же экране появятся `page_obj`, `paginator`
+и `is_paginated`. Кнопки «Вперёд/Назад» должны вести на
+`/students/courses/?page=2`, то есть снова вызывать **эту же** `ListView.get`.
+
+### `DetailView`: публичная карточка курса
+
+**Где на сайте:** каталог → кнопка «Подробнее» →
+`/course/<slug>/`.
+
+Кнопка в `courses/templates/courses/course/list.html`:
+
+```django
+<a href="{% url 'course_detail' course.slug %}" class="button btn-sm">
+  Подробнее
+</a>
+```
+
+До `CourseDetailView.get_context_data()` базовый `DetailView` уже:
+
+1. взял `slug` из URL;
+2. построил queryset Course;
+3. нашёл Course или вернул 404;
+4. записал объект в `self.object`;
+5. добавил `object` в context.
+
+Переопределённый `get_context_data()` только **расширяет** готовый context
+формой записи:
+
+```python
+context = super().get_context_data(**kwargs)
+context["enroll_form"] = CourseEnrollForm(
+    initial={"course": self.object},
+)
+return context
+```
+
+На странице эта переменная становится HTML form в блоке «Записаться на курс».
+После submit она будет обработана уже другой view — `StudentEnrollCourseView`.
+
+### `TemplateView`: где использовать в Educa
+
+В текущем проекте хороший будущий экран для `TemplateView` — «О платформе»:
+
+```text
+GET /about/
+→ AboutView(TemplateView)
+→ pages/about.html
+```
+
+Там нет одного главного queryset, только текст, контакты и, возможно,
+`context["statistics"]`. Не стоит использовать `ListView` ради одного
+списка, если страница по смыслу не является списком.
+
+### Проверка локально
+
+```bash
+python manage.py runserver
+```
+
+1. Откройте `/`.
+2. Нажмите «Подробнее».
+3. Посмотрите Network: `GET /course/<slug>/` → 200.
+4. Войдите студентом и откройте `/students/courses/`.
+5. Сравните список карточек с M2M course membership в admin.
+
+Если `DetailView` отвечает 404, проверьте не template, а URL parameter:
+`slug` в адресе, `slug_url_kwarg`, `slug_field` и существующее значение в БД.
 
 ## Документация Django
 

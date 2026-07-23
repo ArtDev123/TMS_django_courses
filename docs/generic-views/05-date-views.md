@@ -5,6 +5,19 @@
 Date-based views строят архивы по `DateField`/`DateTimeField`. Они нужны для
 блога, новостей, журналов событий, истории объявлений, публикаций.
 
+### Теория: дата как часть адреса, а не только поле таблицы
+
+Обычный `ListView` отвечает на вопрос «какие объекты соответствуют фильтру?».
+Date-based views строят навигацию вокруг времени: пользователь сознательно
+заходит в «архив за июль 2026», а не просто получает записи, где дата
+случайно попала в условие SQL. Поэтому они добавляют в context периоды,
+соседние месяцы и списки дат.
+
+Такой подход особенно уместен для публичной хронологии: новостей, публикаций,
+расписания событий. Для внутренней аналитики, где дата является одним из
+многих filters наряду с пользователем, статусом и курсом, чаще понятнее
+обычный `ListView` с query parameters.
+
 Для LMS они полезны, если появится публичная новостная лента платформы или
 архив объявлений преподавателя.
 
@@ -207,6 +220,90 @@ Date views добавляют в контекст данные периодов 
 3. Показывайте только `is_published=True`.
 4. Убедитесь, что объект с будущей датой не доступен.
 5. Добавьте `DateDetailView` с годом, месяцем, днём и slug в URL.
+
+## 5.10. Где date views могут появиться в Educa
+
+Сейчас материалы курса организованы по Module, а не по календарю. Поэтому
+date-based views не нужно искусственно внедрять в уроки или QuizResult.
+Реалистичные будущие экраны:
+
+| Функция сайта | Подходящая view | Пример URL |
+|---|---|---|
+| Публичные новости платформы | `ArchiveIndexView` | `/news/` |
+| Архив новостей за год | `YearArchiveView` | `/news/2026/` |
+| Новости месяца | `MonthArchiveView` | `/news/2026/07/` |
+| Отдельная новость | `DateDetailView` | `/news/2026/07/23/new-course/` |
+| Расписание живых занятий | `DayArchiveView` | `/schedule/2026/07/23/` |
+| «Сегодняшние события» | `TodayArchiveView` | `/schedule/today/` |
+
+### Реальный пример: новости Educa
+
+Представьте модель `PlatformNews` с `published_at` и `is_published`.
+
+URLconf:
+
+```python
+urlpatterns = [
+    path("", NewsArchiveView.as_view(), name="news_archive"),
+    path("<int:year>/", NewsYearView.as_view(), name="news_year"),
+    path(
+        "<int:year>/<int:month>/<int:day>/<slug:slug>/",
+        NewsDetailView.as_view(),
+        name="news_detail",
+    ),
+]
+```
+
+На главной странице Educa может быть ссылка:
+
+```django
+<a href="{% url 'news_archive' %}">Новости</a>
+```
+
+Когда пользователь открывает `/news/`, lifecycle похож на ListView:
+
+```text
+GET /news/
+→ ArchiveIndexView.get
+→ get_queryset()
+  → PlatformNews.objects.filter(is_published=True)
+→ DateMixin определяет date_field="published_at"
+→ get_context_data()
+  → latest / object_list / pagination context
+→ news/archive.html
+```
+
+Шаблон показывает новость и строит URL details через дату:
+
+```django
+{% for item in object_list %}
+  <a href="{% url 'news_detail'
+      item.published_at|date:'Y'
+      item.published_at|date:'m'
+      item.published_at|date:'d'
+      item.slug %}">
+    {{ item.title }}
+  </a>
+{% endfor %}
+```
+
+### Что нужно объяснить пользователю на экране
+
+Date archive полезен только если дата — часть навигации. На странице
+«Новости за июль 2026» пользователь ожидает, что URL и заголовок соответствуют
+месяцу. Для «Мои результаты тестов» обычно лучше ListView с фильтрами:
+там дата лишь атрибут, а не иерархия навигации.
+
+### Локальная проверка будущей функции
+
+1. Создайте 3 новости с разными `published_at`.
+2. Откройте `/news/2026/07/`.
+3. Проверьте, что только июльские записи попали в HTML.
+4. Добавьте news с `published_at` в будущем.
+5. Убедитесь, что при `allow_future=False` она не открывается.
+
+Если месяц пуст, поведение зависит от `allow_empty`: 404 или пустой archive.
+Это решение нужно принять для UX именно этого экрана.
 
 ## Документация Django
 

@@ -6,6 +6,18 @@
 продуктов: каталог, личный кабинет, блог, dashboard, файл, multi-tenant
 система. Для каждого сценария — подходящая view, URL и точка расширения.
 
+### Теория: view выбирается по форме взаимодействия
+
+При выборе CBV не начинайте с модели. Один и тот же Course участвует в
+нескольких взаимодействиях: в каталоге это карточка списка, в public details
+это один объект, в CMS — редактируемая форма, в student area — приватный
+ресурс. Базовый класс определяется тем, какой HTTP-диалог нужен
+пользователю, а не тем, из какой таблицы пришли данные.
+
+Поэтому `DetailView` и `UpdateView` могут работать с одной моделью, но
+иметь принципиально разные permissions, template и жизненный цикл. Модель
+задаёт данные, view задаёт сценарий.
+
 ## 9.1. Интернет-каталог: фильтры, поиск, пагинация
 
 **Продуктовая задача:** студент открывает каталог курсов, выбирает subject,
@@ -358,3 +370,73 @@ class AnnouncementCreateView(CreateView):
 6. Проверить redirect URL после create/update/delete.
 7. Проверить, что пользовательские поля не дают менять owner/role/tenant.
 8. Проверить пользовательские ошибки формы и 404/403 страницы.
+
+## 9.14. Как переносить production-рецепт в экран Educa
+
+Каждый рецепт сначала нужно связать с конкретным пользователем и кнопкой,
+иначе generic view останется кодом без интерфейса.
+
+### Пример: будущие объявления курса
+
+**Роль:** преподаватель.  
+**Точка входа на сайте:** `/course/mine/` → рядом с кнопками
+«Редактировать / Модули / Удалить» добавить «Объявления».  
+**Template:** `courses/templates/courses/manage/course/list.html`.
+
+```django
+<a href="{% url 'announcement_list' course.id %}">
+  Объявления
+</a>
+```
+
+Полная цепочка:
+
+```text
+Teacher clicks «Объявления»
+→ GET /course/<course_id>/announcements/
+→ AnnouncementListView.get_queryset()
+  → Announcement.objects.filter(course=<course>, course__owner=request.user)
+→ announcement list template
+→ Teacher clicks «Новое объявление»
+→ GET create form
+→ POST same create URL
+→ form_valid assigns course + author
+→ form.save()
+→ 302 back to announcement list
+```
+
+**Студенческий экран:** `/students/course/<id>/` может показывать три
+последних published announcements над module content. Link «Все объявления»
+ведёт на `StudentAnnouncementListView`, где queryset обязан иметь:
+
+```python
+Announcement.objects.filter(
+    course__students=request.user,
+    is_published=True,
+)
+```
+
+Пользовательский эффект: teacher видит черновики и actions, student —
+только опубликованный текст без edit/delete buttons.
+
+### Пример: dashboard recipe
+
+В §9.6 предложен `StudentDashboardView(TemplateView)`.
+
+**Где разместить:** header после «Мои курсы» или сделать `/students/profile/`
+dashboard-страницей.  
+**Что будет видно:** ближайшие announcements, прогресс, certificate, badge.  
+**Почему TemplateView:** один экран объединяет несколько источников данных;
+нет честного единственного `object_list`.
+
+До добавления view нужно последовательно сделать:
+
+```text
+1. path("dashboard/", StudentDashboardView.as_view(), name="student_dashboard")
+2. link в base.html через {% url 'student_dashboard' %}
+3. students/dashboard.html
+4. get_context_data с select_related/prefetch_related
+5. ручной GET test + assertion template/context
+```
+
+Так рецепт становится пользовательской функцией, а не изолированным классом.

@@ -14,6 +14,20 @@ GET  → пользователь видит результат
 Redirect после успеха предотвращает повторную отправку формы при обновлении
 страницы.
 
+### Теория: форма — граница недоверенных данных
+
+HTML form нельзя считать доверенным интерфейсом. Пользователь может изменить
+hidden input, убрать `required`, отправить POST вручную или повторить старый
+запрос. Поэтому generic editing view не просто «получает поля из template».
+Она строит Form/ModelForm, приводит строки к Python-типам, запускает
+валидацию, а затем решает, какие значения всё-таки назначает сервер.
+
+`form.cleaned_data` содержит только значения, прошедшие validation. Однако
+поля вроде `owner`, `author`, `course` и роли пользователя не должны даже
+попадать в пользовательскую форму: они выводятся из request и URL в
+`form_valid()`. Такой подход защищает не только конкретный template, но и
+любой ручной POST-клиент.
+
 ## 3.1. Общая архитектура form views
 
 Важные классы Django:
@@ -467,6 +481,140 @@ class ModuleOrderView(LoginRequiredMixin, View):
 - Update/Delete ограничивают `get_queryset()` владельцем.
 - В DeleteView удаление происходит по POST, не ссылкой GET.
 - Для зависимых сохранений используется транзакция.
+
+## 3.13. Интеграция editing views с экранами Educa
+
+### `CreateView`: кнопка «Создать курс»
+
+**Где на сайте:** преподаватель → header «Преподавание» →
+`/course/mine/` → кнопка «Создать курс».
+
+Кнопка находится в
+`courses/templates/courses/manage/course/list.html`:
+
+```django
+<a href="{% url 'course_create' %}" class="button">
+  Создать курс
+</a>
+```
+
+Она отправляет **GET** на `/course/create/`. Это не создаёт объект — только
+показывает пустую форму:
+
+```text
+GET /course/create/
+→ CourseCreateView
+→ LoginRequiredMixin: teacher залогинен?
+→ PermissionRequiredMixin: есть courses.add_course?
+→ CreateView.get
+→ ModelForm без instance
+→ courses/manage/course/form.html
+→ HTTP 200
+```
+
+Форма в `courses/manage/course/form.html`:
+
+```django
+<form method="post">
+  {{ form.as_p }}
+  {% csrf_token %}
+  <input type="submit" value="Сохранить">
+</form>
+```
+
+После нажатия «Сохранить» браузер делает POST **на тот же URL**:
+
+```text
+POST /course/create/
+→ CourseCreateView.post
+→ form = ModelForm(request.POST)
+→ form.is_valid()
+  ├─ errors: form_invalid → HTML 200 с errors
+  └─ valid:
+     → OwnerEditMixin.form_valid
+       → form.instance.owner = request.user
+     → ModelFormMixin.form_valid
+       → self.object = form.save()
+     → FormMixin.form_valid
+       → HTTP 302 /course/mine/
+→ Browser GET /course/mine/
+```
+
+`owner` не выводится в `{{ form.as_p }}`. Это важно: преподаватель не может
+через браузер подставить чужой owner. Сервер назначает его перед `form.save()`.
+
+### `UpdateView`: кнопка «Редактировать»
+
+**Где на сайте:** `/course/mine/` → карточка курса → «Редактировать».
+
+```django
+<a href="{% url 'course_edit' course.id %}">
+  Редактировать
+</a>
+```
+
+Экран использует **тот же** `course/form.html`, но `UpdateView` передаёт
+существующий `object`; поэтому заголовок template переключается:
+
+```django
+{% if object %}
+  Редактировать курс
+{% else %}
+  Создать курс
+{% endif %}
+```
+
+До GET/POST формы UpdateView находит course через owner-scoped queryset.
+Это означает, что URL `/course/999/edit/` под чужим teacher вернёт 404
+ещё до создания формы.
+
+### `DeleteView`: две разные стадии
+
+**Где на сайте:** `/course/mine/` → «Удалить».
+
+```text
+GET /course/7/delete/
+→ DeleteView.get
+→ получает Course из owner queryset
+→ показывает courses/manage/course/delete.html
+→ объект ещё существует
+
+POST /course/7/delete/
+→ BaseDeleteView.form_valid
+→ object.delete()
+→ redirect /course/mine/
+```
+
+Template confirmation явно использует POST:
+
+```django
+<form method="post">
+  {% csrf_token %}
+  <input type="submit" value="Да, удалить">
+</form>
+```
+
+На сайте это делает кнопку «Отмена» безопасной link-навигацией, а
+«Да, удалить» — единственным действием, которое изменит БД.
+
+### `FormView`: запись студента
+
+**Где на сайте:** details публичного курса → «Записаться на курс».
+
+Это уже описано в §3.2, но важно увидеть интеграцию: форма создаётся
+`CourseDetailView`, а обрабатывается `StudentEnrollCourseView`. Это нормально:
+одна view подготавливает экран, другая обслуживает конкретное POST-действие.
+
+### Проверка вручную
+
+1. Откройте DevTools → Network.
+2. Teacher: откройте create course, отправьте пустую форму — увидите POST 200
+   и errors; объект не создастся.
+3. Отправьте валидную форму — увидите POST 302, затем GET `/course/mine/`.
+4. Нажмите Edit, измените title, отправьте форму.
+5. Нажмите Delete: GET показывает confirmation; только POST удаляет course.
+
+Это лучший способ увидеть отличие `form_invalid` (200) от `form_valid` (302).
 
 ## Документация Django
 

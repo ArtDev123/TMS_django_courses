@@ -9,6 +9,19 @@ Generic view не существует отдельно от URL. URLconf:
 3. `as_view()` создаёт экземпляр CBV;
 4. view использует `self.kwargs` для queryset, формы и redirect.
 
+### Теория: URL — публичный контракт приложения
+
+URL связывает три разных слоя: действие пользователя в template, параметры
+предметной области и Python view. Название маршрута (`name="quiz_take"`)
+делает этот контракт устойчивым: templates и redirects говорят не «какая
+сейчас строка адреса», а «какое действие требуется».
+
+Параметры пути также выражают отношения данных. В
+`/students/course/7/module/3/` число 7 не просто украшение: оно задаёт
+границу, внутри которой module 3 должен быть найден. Корректная view
+проверяет обе части адреса, иначе URL позволяет пересечь границу между
+курсами.
+
 Официальная документация: [URL dispatcher](https://docs.djangoproject.com/en/6.0/topics/http/urls/) и [base CBV](https://docs.djangoproject.com/en/6.0/ref/class-based-views/base/).
 
 ## 8.1. Базовая связка URL → CBV
@@ -361,3 +374,72 @@ permissions и scopes.
 - При parent-child URL дочерний объект проверяется через родителя.
 - Query parameters читаются из `request.GET`.
 - Все формы используют POST, удаление — POST confirmation.
+
+## 8.13. URLconf Educa: как найти каждую кнопку и следующий экран
+
+В проекте URLconf разделён не случайно:
+
+| Файл | Для кого | Что подключает |
+|---|---|---|
+| `educa/urls.py` | весь сайт | root prefixes и include |
+| `courses/public_urls.py` | все посетители | каталог и публичные course details |
+| `courses/urls.py` | преподаватели | CMS и управление content |
+| `students/urls.py` | enrolled students | обучение, тесты, profile |
+
+### Полный пример: кнопка «Пройти тест»
+
+1. Template `students/templates/students/course/detail.html` содержит:
+
+```django
+<a href="{% url 'quiz_take' object.id content.object_id %}">
+  Пройти тест
+</a>
+```
+
+2. Django ищет имя `quiz_take` в URLconf:
+
+```python
+# students/urls.py
+path(
+    "course/<int:pk>/quiz/<int:quiz_id>/",
+    views.QuizTakeView.as_view(),
+    name="quiz_take",
+)
+```
+
+3. `include("students.urls")` в root URLconf добавляет prefix `/students/`.
+4. Итоговая ссылка в HTML: `/students/course/7/quiz/3/`.
+5. После клика browser отправляет GET.
+6. `QuizTakeView.get(request, pk=7, quiz_id=3)` рендерит quiz form.
+7. Submit у template не указывает `action`, поэтому POST идёт **на тот же
+   URL** и Django вызывает `QuizTakeView.post`.
+8. `post()` redirect-ит на URL name `quiz_result`; browser открывает экран
+   результата.
+
+### Почему URL names важнее жёстких адресов
+
+В template не написано:
+
+```django
+<a href="/students/course/{{ object.id }}/quiz/{{ content.object_id }}/">
+```
+
+Путь может измениться: например, `/students/` станет `/learn/`. При `{% url
+'quiz_take' ... %}` вы измените только `path(...)`; все templates и redirects
+останутся корректны.
+
+### Локальный приём для проверки
+
+В Django shell:
+
+```bash
+python manage.py shell -c "
+from django.urls import reverse, resolve
+print(reverse('quiz_take', args=[7, 3]))
+print(resolve('/students/course/7/quiz/3/').func.view_class)
+"
+```
+
+Первая строка проверяет generation URL, вторая — что incoming URL ведёт в
+нужный CBV class. Это полезно, когда кнопка даёт `NoReverseMatch` или URL
+открывает неожиданную view.

@@ -5,6 +5,18 @@
 Этот практикум связывает CBV с текущими сущностями Educa. Выполняйте упражнения
 на отдельной ветке и после каждого шага запускайте `python manage.py check`.
 
+### Теория практики: сначала наблюдение, затем изменение
+
+При изучении generic views легко скопировать рабочий фрагмент, не поняв,
+почему он работает. Практика должна идти в обратном направлении: сначала
+открыть существующий экран, определить URL, HTTP method и базовый класс,
+посмотреть Network и только после этого менять один метод.
+
+Так вы замечаете причинно-следственную связь. Например, добавление фильтра в
+`get_queryset()` меняет не только число карточек на странице: оно меняет
+набор объектов, который Detail/Update/Delete вообще способны найти. Это
+понимание важнее самого синтаксиса `filter(...)`.
+
 ## 6.1. Подготовка
 
 ```bash
@@ -108,8 +120,7 @@ class MyCertificateView(LoginRequiredMixin, DetailView):
 1. Создайте `CourseQuestionForm` с полями `subject`, `message`.
 2. Создайте `CourseQuestionView(LoginRequiredMixin, FormView)`.
 3. В `dispatch()` получите курс только из тех, где student записан.
-4. В `form_valid()` отправьте email owner курса или временно покажите
-   `messages.success`.
+4. В `form_valid()` временно покажите `messages.success` (что-то типо flash сообщений во фласке, по хорошему отправлять емейл, но сложновато реализовывать).
 5. В `get_success_url()` вернитесь в детали курса.
 
 Ключевые решения:
@@ -273,3 +284,80 @@ user.get_all_permissions()
 
 Выносите mixin, когда есть стабильное правило, например: «во всех CRUD
 преподаватель видит только объекты, у которых `owner=request.user`».
+
+## 6.10. Как каждое упражнение проявится на сайте
+
+Не выполняйте упражнения только через shell: после каждого изменения откройте
+реальный экран, чтобы связать метод view с пользовательским действием.
+
+| Упражнение | Где открыть | Что сделать в браузере | Что проверяет |
+|---|---|---|---|
+| Поиск/пагинация курсов | `/students/courses/` | ввести `?q=python`, затем `?page=2` | `get_queryset`, `paginate_by`, context |
+| Приватный certificate | `/students/profile/` | нажать «Открыть», затем повторить чужим user | DetailView scoped queryset |
+| Вопрос преподавателю | course details | отправить валидную и невалидную форму | FormView GET/POST |
+| Announcement CRUD | CMS course page | Create → Edit → Delete | Create/Update/Delete lifecycle |
+
+### Рекомендуемый цикл разработки
+
+```text
+1. Добавили/изменили view.
+2. python manage.py check.
+3. Открыли экран по URL.
+4. Проверили GET в Network.
+5. Нажали кнопку/form submit.
+6. Проверили POST status и redirect.
+7. Проверили, что БД/HTML изменились.
+8. Повторили под другим user.
+9. Добавили TestCase для успешного и запрещённого сценария.
+```
+
+### Пример: добавляете пагинацию «Моих курсов»
+
+**Кодовая задача:** `paginate_by = 6` в `StudentCourseListView`.
+
+**Где будет видно:** в `students/templates/students/course/list.html`, ниже
+course cards должна появиться навигация страниц.
+
+**Что Django делает:**
+
+```text
+GET /students/courses/?page=2
+→ get_queryset() возвращает ВСЕ доступные courses
+→ ListView/Paginator отделяет ровно вторую страницу
+→ object_list в template содержит только 6 объектов страницы
+→ page_obj содержит номер и ссылки previous/next
+```
+
+**Что нужно добавить в template:**
+
+```django
+{% if is_paginated %}
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">Назад</a>
+  {% endif %}
+  <span>{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">Вперёд</a>
+  {% endif %}
+{% endif %}
+```
+
+**Локальная проверка:** создайте/запишите student минимум на 7 courses;
+откройте `?page=1` и `?page=2`; в DevTools убедитесь, что оба действия —
+обычные GET, а не POST.
+
+### Пример: test доступа к чужому объекту
+
+**Где будет видно:** второй teacher вручную вставляет URL чужого edit screen
+в адресную строку.
+
+```text
+GET /course/17/edit/
+→ CourseUpdateView.get_queryset()
+→ filter(owner=second_teacher)
+→ объект 17 не найден
+→ HTTP 404
+```
+
+Это не ошибка интерфейса. Это ожидаемый результат того, что scope реализован
+на уровне queryset.

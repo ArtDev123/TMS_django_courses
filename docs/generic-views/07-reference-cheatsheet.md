@@ -2,6 +2,15 @@
 
 [← Практикум](06-practice-educa.md) · [Оглавление](README.md)
 
+### Теория: шпаргалка не заменяет поток выполнения
+
+Таблицы в этой главе нужны для быстрого выбора точки расширения, но их нельзя
+читать как набор независимых API-методов. `get_queryset()`, `get_object()`,
+`get_context_data()` и `render_to_response()` вызываются в определённой
+последовательности; `form_valid()` имеет смысл только после
+`form.is_valid()`. Если неясно, почему метод не срабатывает, возвращайтесь к
+главам о lifecycle и MRO, затем просматривайте фактический request в Network.
+
 ## 7.1. Как выбрать view
 
 | Задача | Выбор |
@@ -225,3 +234,40 @@ GET должен быть безопасным и идемпотентным; у
 - [Classy Class-Based Views](https://ccbv.co.uk/) для MRO и методов;
 - текущие `courses/views.py` и `students/views.py` проекта — как реальный
   материал для рефакторинга.
+
+## 7.13. Карта «метод → экран Educa → наблюдаемый результат»
+
+Эта таблица нужна, чтобы при чтении generic CBV сразу понимать, что меняется
+для пользователя, а не только для Python-кода.
+
+| Метод | Реальный экран Educa | Когда срабатывает | Что меняется в браузере |
+|---|---|---|---|
+| `dispatch()` | `/course/<pk>/modules/` | каждый GET/POST | чужой teacher не увидит formset |
+| `get_queryset()` | `/students/courses/` | до render списка | показываются только enrolled courses |
+| `get_object()` | `/course/<slug>/` | до detail template | выбран конкретный course либо 404 |
+| `get_context_data()` | `/students/course/<pk>/` | перед render | progress и выбранный module |
+| `get_form_kwargs()` | будущая форма вопроса teacher | до создания формы | form знает user/course |
+| `form_valid()` | `/students/enroll-course/` | после valid POST | student появляется в M2M course |
+| `get_success_url()` | create/update course | после form save | browser получает 302 на список |
+| `form_invalid()` | create course | после invalid POST | HTML показывает validation errors |
+
+### Как быстро найти место использования
+
+1. Найдите class в `courses/views.py` или `students/views.py`.
+2. Найдите её имя в `courses/urls.py`, `students/urls.py` или
+   `courses/public_urls.py`.
+3. URL name из `path(..., name="...")` найдите по `{% url '...' %}` в
+   templates.
+4. Откройте страницу и повторите действие с Network panel.
+
+Например:
+
+```text
+StudentEnrollCourseView
+→ students/urls.py: name="student_enroll_course"
+→ courses/course/detail.html: form action="{% url 'student_enroll_course' %}"
+→ кнопка «Записаться на курс»
+→ POST /students/enroll-course/
+```
+
+Такой путь поиска работает для любой новой button и view в проекте.
