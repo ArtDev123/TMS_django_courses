@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -76,7 +77,13 @@ class ModuleCompleteView(LoginRequiredMixin, View):
         module = get_object_or_404(
             Module, pk=module_id, course=course)
         if not mark_module_complete(request.user, module):
-            raise ValueError()
+            messages.error(
+                request,
+                'Чтобы завершить модуль, пройдите все тесты.',
+            )
+        else:
+            messages.success(
+                request, f'Модуль «{module.title}» завершён.')
         return redirect(
             'student_course_detail_module', pk, module_id)
 

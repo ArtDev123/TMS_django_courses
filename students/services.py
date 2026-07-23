@@ -1,5 +1,7 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
+from courses.models import Quiz, QuizResult
 from students.models import (
     ModuleProgress, CourseProgress, Certificate, Badge, UserBadge,
 )
@@ -15,7 +17,25 @@ def get_course_progress(user, course):
     return int(done / total * 100)
 
 
+def all_module_quizzes_passed(user, module):
+    quiz_ct = ContentType.objects.get_for_model(Quiz)
+    quiz_ids = list(
+        module.contents.filter(content_type=quiz_ct).values_list(
+            'object_id', flat=True,
+        )
+    )
+    if not quiz_ids:
+        return True
+    passed_count = QuizResult.objects.filter(
+        user=user, quiz_id__in=quiz_ids, passed=True,
+    ).count()
+    return passed_count == len(quiz_ids)
+
+
 def mark_module_complete(user, module):
+    if not all_module_quizzes_passed(user, module):
+        return False
+
     progress, _ = ModuleProgress.objects.get_or_create(
         user=user, module=module)
     if not progress.completed:
@@ -32,6 +52,7 @@ def mark_module_complete(user, module):
             cp.completed_at = timezone.now()
             cp.save()
             on_course_completed(user, course)
+    return True
 
 
 def is_module_completed(user, module):
