@@ -305,3 +305,9 @@ class ContentOrderView(LoginRequiredMixin, View):
             return JsonResponse({'status': 'ok'})
         except (json.JSONDecodeError, KeyError, TypeError):
             return JsonResponse({'status': 'error'}, status=400)
+
+
+class CourseOwnerMixin:
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(course__owner=self.request_user)

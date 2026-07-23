@@ -156,3 +156,22 @@ class QuizResult(models.Model):
             ),
         ]
 
+
+class Announcement(models.Model):
+    course = models.ForeignKey(
+        Course, related_name='announcements', on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        User, related_name='announcements', on_delete=models.CASCADE
+    )
+    title = models.CharField(max_length=200)
+    body = models.TextField()
+    is_published = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created"]
+
+    def __str__(self):
+        return self.title
