@@ -1,2 +1,13 @@
 {% load embed_video_tags %}
-{% video item.url '640x360' %}
+{% video item.url as my %}
+<iframe
+  src="{{ my.url }}"
+  width="640"
+  height="360"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"
+></iframe>
+{% endvideo %}

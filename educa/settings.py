@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'embed_video',  # встраивание YouTube/Vimeo
+    'django_seed',
 ]
 
 
@@ -134,3 +135,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_REDIRECT_URL = '/students/courses/'
 LOGOUT_REDIRECT_URL = '/'
+
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
